@@ -1,0 +1,9 @@
+[workspace]
+
+# Используем последнюю версию resolver, чтобы Cargo не ругался.
+resolver = "2" 
+
+members = [ 
+    "acpi_sdt",
+    "bgrt_app",
+]
