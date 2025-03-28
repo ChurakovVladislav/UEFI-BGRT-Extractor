@@ -55,8 +55,9 @@ fn save_bgrt_image() -> Result {
         .map_err(|_| Status::NOT_FOUND)?;
 
     println!("{}", bgrt_table);
-    let addr = bgrt_table.image_address;
-    let len = (bgrt_table.image_offset_x * bgrt_table.image_offset_y) as usize;
+    let addr = bgrt_table.address();
+    let (x, y) = bgrt_table.offset();
+    let len = (x * y) as usize;
 
     let slice: &[u8] = unsafe { slice::from_raw_parts(addr as *const u8, len) };
 
