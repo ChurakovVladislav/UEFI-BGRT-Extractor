@@ -6,6 +6,19 @@ use uefi::prelude::*;
 use uefi::proto::unsafe_protocol;
 use uefi::{Char8, Result};
 
+pub mod acpi_sdt_hdr;
+use crate::acpi_sdt_hdr::EfiAcpiSdtHeader;
+
+type EfiAcpiTableVersion = u32;
+type EfiAcpiDataType = u32;
+
+type EfiAcpiNotificationFn = unsafe extern "efiapi" fn(
+    table: *mut *mut EfiAcpiSdtHeader,
+    version: EfiAcpiTableVersion,
+    table_key: usize,
+) -> Status;
+
+/// provides services for creating ACPI system description tables.
 #[derive(Debug)]
 #[repr(C)]
 #[unsafe_protocol("eb97088e-cfdf-49c6-be4b-d906a5b20e86")]
@@ -13,7 +26,7 @@ pub struct AcpiSdt {
     acpi_version: u32,
     get_acpi_table: unsafe extern "efiapi" fn(
         index: usize,
-        table: *mut *mut EfiAcpiHeader,
+        table: *mut *mut EfiAcpiSdtHeader,
         version: *mut EfiAcpiTableVersion,
         table_key: *mut usize,
     ) -> Status,
@@ -43,29 +56,6 @@ pub struct AcpiSdt {
     ) -> Status,
 }
 
-type EfiAcpiTableVersion = u32;
-type EfiAcpiDataType = u32;
-
-#[derive(Clone, Copy, Debug)]
-#[repr(C)]
-pub struct EfiAcpiHeader {
-    signature: u32,
-    pub lenght: u32,
-    revision: u8,
-    checksum: u8,
-    oem_id: [Char8; 6],
-    oem_table_id: [Char8; 8],
-    oem_revision: u32,
-    creator_id: u32,
-    creator_revision: u32,
-}
-
-type EfiAcpiNotificationFn = unsafe extern "efiapi" fn(
-    table: *mut *mut EfiAcpiHeader,
-    version: EfiAcpiTableVersion,
-    table_key: usize,
-) -> Status;
-
 impl AcpiSdt {
     ///  This function uses the ACPI SDT protocol to search an ACPI table
     ///  with a given signature.
@@ -75,7 +65,7 @@ impl AcpiSdt {
     ) -> Result<T> {
         let mut index = 0;
         let mut version: EfiAcpiTableVersion = 0;
-        let mut acpi_head: *mut EfiAcpiHeader = ptr::null_mut();
+        let mut acpi_head: *mut EfiAcpiSdtHeader = ptr::null_mut();
         let mut table_key: usize = 0;
 
         loop {
@@ -88,7 +78,7 @@ impl AcpiSdt {
             if status.is_success() {
                 index += 1;
 
-                if head.get_header().signature == table_signature {
+                if head.get_header().signature() == table_signature {
                     break Ok(head);
                 }
             } else {
@@ -98,24 +88,10 @@ impl AcpiSdt {
     }
 }
 
-impl Display for EfiAcpiHeader {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "  Table (signature: 0x{:x})", self.signature)?;
-        writeln!(f, "  Lenght: {}", self.lenght)?;
-        writeln!(f, "  Revision: {}", self.revision)?;
-        writeln!(f, "  Checksum: {}", self.checksum)?;
-        writeln!(f, "  OEM ID: {:?}", self.oem_id)?;
-        writeln!(f, "  OEM Table ID: {:?}", self.oem_table_id)?;
-        writeln!(f, "  OEM Revision: {}", self.oem_revision)?;
-        writeln!(f, "  Creator ID: {}", self.creator_id)?;
-        writeln!(f, "  Creator revision: {}", self.creator_revision)
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct EfiAcpiBootGraphicsResourceTable {
-    pub header: EfiAcpiHeader,
+    pub header: EfiAcpiSdtHeader,
     version: u16,
     status: u8,
     image_type: u8,
@@ -136,17 +112,17 @@ impl Display for EfiAcpiBootGraphicsResourceTable {
 }
 
 pub trait AcpiHeadeds {
-    fn get_header(&self) -> EfiAcpiHeader;
+    fn get_header(&self) -> EfiAcpiSdtHeader;
 }
 
-impl AcpiHeadeds for EfiAcpiHeader {
-    fn get_header(&self) -> EfiAcpiHeader {
+impl AcpiHeadeds for EfiAcpiSdtHeader {
+    fn get_header(&self) -> EfiAcpiSdtHeader {
         *self
     }
 }
 
 impl AcpiHeadeds for EfiAcpiBootGraphicsResourceTable {
-    fn get_header(&self) -> EfiAcpiHeader {
+    fn get_header(&self) -> EfiAcpiSdtHeader {
         self.header
     }
 }
