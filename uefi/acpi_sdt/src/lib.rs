@@ -11,6 +11,8 @@ use crate::acpi_sdt_hdr::EfiAcpiSdtHeader;
 mod types;
 pub use types::*;
 
+pub mod signature;
+
 type EfiAcpiTableVersion = u32;
 type EfiAcpiDataType = u32;
 
@@ -61,10 +63,7 @@ pub struct AcpiSdt {
 impl AcpiSdt {
     ///  This function uses the ACPI SDT protocol to search an ACPI table
     ///  with a given signature.
-    pub fn locate_table_by_signature<T: AcpiHeadeds + Copy>(
-        &self,
-        table_signature: u32,
-    ) -> Result<T> {
+    pub fn locate_table_by_signature<T: AcpiHeadeds + Copy>(&self) -> Result<T> {
         let mut index = 0;
         let mut version: EfiAcpiTableVersion = 0;
         let mut acpi_head: *mut EfiAcpiSdtHeader = ptr::null_mut();
@@ -80,7 +79,7 @@ impl AcpiSdt {
             if status.is_success() {
                 index += 1;
 
-                if head.get_header().signature() == table_signature {
+                if head.get_header().signature() == T::ACPI_TYPE {
                     break Ok(head);
                 }
             } else {
@@ -91,6 +90,8 @@ impl AcpiSdt {
 }
 
 pub trait AcpiHeadeds {
+    const ACPI_TYPE: u32 = 0u32;
+
     fn get_header(&self) -> EfiAcpiSdtHeader;
 }
 

@@ -32,26 +32,12 @@ fn locate_protocol<P: ProtocolPointer + ?Sized>() -> ScopedProtocol<P> {
     }
 }
 
-macro_rules! signature_16 {
-    ($a:expr, $b:expr) => {
-        (($a as u32) | (($b as u32) << 8))
-    };
-}
-
-// Определяем макрос для SIGNATURE_32
-macro_rules! signature_32 {
-    ($a:expr, $b:expr, $c:expr, $d:expr) => {
-        (signature_16!($a, $b) | (signature_16!($c, $d) << 16))
-    };
-}
-
 fn save_bgrt_image() -> Result {
     let table = locate_protocol::<AcpiSdt>();
 
-    // Найти BGRT таблицу
-    let signature = signature_32!('B', 'G', 'R', 'T');
+    // Find the BGRT table
     let bgrt_table = table
-        .locate_table_by_signature::<EfiAcpiBootGraphicsResourceTable>(signature)
+        .locate_table_by_signature::<EfiAcpiBootGraphicsResourceTable>()
         .map_err(|_| Status::NOT_FOUND)?;
 
     println!("{}", bgrt_table);

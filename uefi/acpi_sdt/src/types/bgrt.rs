@@ -1,5 +1,5 @@
 use crate::acpi_sdt_hdr::EfiAcpiSdtHeader;
-use crate::AcpiHeadeds;
+use crate::{signature_32, AcpiHeadeds};
 use core::fmt::{self, Display};
 
 /// "BGRT" Boot Graphics Resource Table
@@ -26,6 +26,8 @@ impl EfiAcpiBootGraphicsResourceTable {
 }
 
 impl AcpiHeadeds for EfiAcpiBootGraphicsResourceTable {
+    const ACPI_TYPE: u32 = signature_32!('B', 'G', 'R', 'T');
+
     fn get_header(&self) -> EfiAcpiSdtHeader {
         self.header
     }
